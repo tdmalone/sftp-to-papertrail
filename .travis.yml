@@ -1,0 +1,41 @@
+language: node_js
+
+cache:
+  yarn: true
+  directories:
+    - node_modules
+
+# Skip builds on version tags, as they'll occur on the branch anyway.
+branches:
+  except:
+    - /^v[0-9]\.[0-9]\.[0-9]/
+
+install:
+  - yarn
+
+script:
+  - yarn lint
+  - yarn test
+
+deploy:
+  on:
+    branch: master
+  skip_cleanup: true
+
+  # @see https://docs.travis-ci.com/user/deployment/lambda/
+  provider: lambda
+  function_name: "papertrail-rsync"
+  region: "ap-southeast-2"
+  role: "arn:aws:iam::300761597318:role/lambda_s3_bucket"
+  runtime: "nodejs6.10"
+  handler_name: "handler"
+  access_key_id: "AKIAI2EGLBKJJUQZE3LA"
+  secret_access_key:
+    secure: "Szh5glx2HkqPfwj7CHGXYaUyXF4gRlo5HFLQRk6UXpmCPm0wi5+C59/i5ieMECE9nmw4/0gnWWNNDtWabLI4aXHiD9OIcJaEBY81qRyEizL9uLGzytWQHQaN9iFi7nF/LwvA0/TzlTjYBcfMvsYwLFznPmunVcWkWyeWn+SeRWUwPh0ocldDMAeNt0x4W31sh1mNyT9SYIoeqsZ/mB3prCxQpgTyAAl/mNzJ1/l/9EKEbZpAXkCWN8O9ymwKMzaiG3tNU0Td4XkEbbn+ynwyReHQyWd1Eg0KeWwkoMfeQycvZVyBfnypmU5/70ktZcCR554nUnC4bx62myv8G5Gje9KDYJgyG+4x0HL9MQfS2SN5xsoZU9P/JV3tFQxG5BVI1ye73JtMUMpNUnqkYvqlD1v7VpJK5310u9/StNnQKs0+8bAEy6LqMXDeMCMnbDkVa8FANqgeOsmuc7/xJvuyOaqRytlAxiPKkNCHZ8K9/yPJlekJ3uSGmLQkfwVpVwsfkun00KHUgcxiKfmNq65tNpPnhD2IHSUo2e1KahWgtVcFkkiY8EoywFjVioDvbP2TDDoeqcjRds5dn4NkzuEK2veeVfK2zlAw0Wcn4ks32ev4GCAkryo1L+FWcxCH+eWelpYveXypXXA5GO1mzvxhADRQmlE2vkMZQ/q15EapD/I="
+
+notifications:
+  email: false
+  webhooks:
+    urls:
+      - https://chr-cicd.herokuapp.com/hooks/travis.php
+    on_start: always

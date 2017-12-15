@@ -1,0 +1,35 @@
+{
+  "name": "sftp-to-papertrail",
+  "version": "0.0.1",
+  "description": "A Node module that retrieves one or more log files via SFTP, and logs new entries to Papertrail. Deploys to AWS Lambda and uses S3 for maintaining state.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChromatixAU/sftp-to-papertrail.git"
+  },
+  "main": "index.js",
+  "author": "Tim Malone <tim.malone@chromatix.com.au>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ChromatixAU/sftp-to-papertrail/issues"
+  },
+  "homepage": "https://github.com/ChromatixAU/sftp-to-papertrail#readme",
+  "scripts": {
+    "lint": "eslint --ignore-pattern coverage/ \"**/*.js\"",
+    "test": "jest --verbose --coverage"
+  },
+  "jest": {
+    "testMatch": [
+      "**/tests/**/*.js"
+    ]
+  },
+  "dependencies": {
+    "aws-sdk": "^2.170.0",
+    "ssh2-sftp-client": "^2.0.1",
+    "winston": "^2.4.0",
+    "winston-papertrail": "^1.0.5"
+  },
+  "devDependencies": {
+    "@chromatix/eslint-config-chromatix": "^0.0.14",
+    "jest": "^21.2.1"
+  }
+}
