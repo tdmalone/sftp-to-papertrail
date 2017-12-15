@@ -1,5 +1,9 @@
 language: node_js
 
+# Use a similar version to that on Lambda.
+node_js:
+  - 6
+
 cache:
   yarn: true
   directories:
@@ -19,7 +23,7 @@ script:
 
 deploy:
   on:
-    branch: master
+    branch: tim
   skip_cleanup: true
 
   # @see https://docs.travis-ci.com/user/deployment/lambda/
