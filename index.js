@@ -7,7 +7,8 @@
 
 'use strict';
 
-const DEFAULT_SFTP_PORT = 22;
+const DEFAULT_SFTP_PORT = 22,
+      DEBUG = false;
 
 // @see https://github.com/aws/aws-sdk-js
 // @see https://github.com/jyu213/ssh2-sftp-client
@@ -42,11 +43,23 @@ exports.handler = ( event, context, callback ) => {
   const config = {
 
     sftp: {
-      host:     getEnv( 'STP_SFTP_HOST' ),
-      port:     getEnv( 'STP_SFTP_PORT', DEFAULT_SFTP_PORT ),
-      username: getEnv( 'STP_SFTP_USERNAME' ),
-      password: getEnv( 'STP_SFTP_PASSWORD' ),
-      path:     getEnv( 'STP_SFTP_PATH' )
+
+      host:       getEnv( 'STP_SFTP_HOST' ),
+      port:       getEnv( 'STP_SFTP_PORT', DEFAULT_SFTP_PORT ),
+      username:   getEnv( 'STP_SFTP_USERNAME' ),
+      password:   getEnv( 'STP_SFTP_PASSWORD' ),
+      path:       getEnv( 'STP_SFTP_PATH' ),
+      debug:      DEBUG ? console.log : null,
+
+      // Explicitly provide diffie-hellman algorithms to resolve handshake issues.
+      algorithms: {
+        kex: [
+          'diffie-hellman-group1-sha1',
+          'diffie-hellman-group-exchange-sha1',
+          'diffie-hellman-group14-sha1',
+          'diffie-hellman-group-exchange-sha256',
+        ]
+      }
     },
 
     // For S3 access, credentials are taken directly from the environment, eg. AWS_ACCESS_KEY_ID and
@@ -88,6 +101,7 @@ exports.handler = ( event, context, callback ) => {
     return Promise.all([ store, send ]);
 
   }).then( ( result ) => {
+    console.log( 'Done.' );
     callback( null, result );
   }).catch( ( error ) => {
     callback( error );
@@ -109,20 +123,39 @@ function getLogFileLatest( config ) {
 
     const client = new sftp();
 
+    console.log( 'Connecting to SFTP server...' );
+
+    // TODO: How do we disconnect when we're done?
+
     decrypt( config.password ).then( ( password ) => {
       config.password = password;
       return client.connect( config );
     }).then( () => {
-      return client.list( config.path );
-    }).then( ( data ) => {
-      console.log( data );
-      resolve();
+      console.log( 'Retrieving latest log file...' );
+      return client.get( config.path );
+    }).then( ( stream ) => {
+
+      const chunks = [];
+
+      stream.on( 'data', ( chunk ) => {
+        chunks.push( chunk );
+        console.log( chunks.length + ' part' + ( 1 < chunks.length ? 's' : '' ) + '...' );
+      }).on( 'end', () => {
+
+        const contents = chunks.join( '' ),
+              lines = contents.split( '\n' ).length;
+
+        console.log( 'Retrieved ' + lines + ' lines in approx ' + contents.length + ' bytes.' );
+        resolve( contents );
+
+      });
+
     }).catch( ( error ) => {
       reject( error );
     });
 
-  });
-}
+  }); // Return Promise.
+} // Function getLogFileLatest.
 
 /**
  * Gets last known log file from an S3 bucket.
@@ -134,10 +167,11 @@ function getLogFileStore( config ) {
   return new Promise( ( resolve, reject ) => {
 
     // TODO: Write this function.
+    console.log( 'Retrieving old log file for comparison (TODO)...' );
     resolve( 'line1\nline2' );
 
-  });
-}
+  }); // Return Promise.
+} // Function getLogFileStore.
 
 /**
  * Compares the contents of two log files, returning the differing lines.
@@ -149,6 +183,8 @@ function getLogFileStore( config ) {
  */
 function compareLogFiles( oldContents, newContents ) {
 
+  console.log( 'Looking for new log entries...' );
+
   // Split the log file lines into arrays, filtering out any blank lines.
   const oldLines = oldContents.split( '\n' ).filter( () => true ),
         newLines = newContents.split( '\n' ).filter( () => true );
@@ -158,10 +194,12 @@ function compareLogFiles( oldContents, newContents ) {
   // eslint-disable-next-line no-magic-numbers
   const difference = newLines.filter( line => 0 > oldLines.indexOf( line ) );
 
+  console.log( 'Found ' + difference.length + ' new lines.' );
+
   // Return the new lines as a string, with any outside whitespace removed.
   return difference.join( '\n' ).trim();
 
-}
+} // Function compareLogFiles.
 
 /**
  * Saves new log file to an S3 bucket.
@@ -174,10 +212,11 @@ function saveToStore( contents, config ) {
   return new Promise( ( resolve, reject ) => {
 
     // TODO: Write this function.
+    console.log( 'Store log file for later comparison (TODO)...' );
     resolve();
 
-  });
-}
+  }); // Return Promise.
+} // Function saveToStore.
 
 /**
  * Sends the new log lines to Papertrail, via Winston.
@@ -189,6 +228,8 @@ function saveToStore( contents, config ) {
 function sendToPapertrail( logLines, config ) {
   return new Promise( ( resolve, reject ) => {
 
+    console.log( 'Connecting to Papertrail...' );
+
     const papertrail = new winston.transports.Papertrail( config ),
           logger = new winston.Logger({ transports: [ papertrail ] });
 
@@ -196,9 +237,12 @@ function sendToPapertrail( logLines, config ) {
       reject( error );
     }).on( 'connect', () => {
 
-      logLines.split( '\n' ).forEach( ( line ) => {
-        logger.info( line );
-        console.log( line );
+      const splitLines = logLines.split( '\n' );
+      console.log( 'Logging ' + splitLines.length + ' lines...' );
+
+      splitLines.forEach( ( line ) => {
+        //logger.info( line );
+        //console.log( line );
       });
 
       logger.close();
@@ -226,10 +270,12 @@ function decrypt( encrypted ) {
       return;
     }
 
+    console.log( 'Decrypting SFTP password...' );
+
     kms.decrypt({ CiphertextBlob: Buffer.from( encrypted, 'base64' ) }, ( error, data ) => {
       if ( error ) reject( error );
       resolve( data.Plaintext.toString( 'ascii' ) );
     });
 
-  });
-}
+  }); // Return Promise.
+} // Function decrypt.
