@@ -1,3 +1,4 @@
-coverage
-node_modules
+/coverage/
+/docs/
+/node_modules/
 *.log

@@ -22,12 +22,21 @@ script:
   - yarn test
 
 deploy:
+
+  # Use a custom version of dpl.
+  # @see https://github.com/travis-ci/dpl/blob/master/TESTING.md
+  # @see https://github.com/tdmalone/dpl/
+  edge:
+    source: tdmalone/dpl
+    branch: master
+
   on:
     branch: tim
   skip_cleanup: true
 
   # @see https://docs.travis-ci.com/user/deployment/lambda/
   provider: lambda
+  publish: true
   function_name: "papertrail-rsync"
   region: "ap-southeast-2"
   role: "arn:aws:iam::300761597318:role/lambda_s3_bucket"

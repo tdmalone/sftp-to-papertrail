@@ -14,7 +14,11 @@
   },
   "homepage": "https://github.com/ChromatixAU/sftp-to-papertrail#readme",
   "scripts": {
-    "lint": "eslint --ignore-pattern coverage/ \"**/*.js\"",
+    "execute": "node -e \"require( '.' ).handler( {}, {}, ( err ) => { if ( err ) throw new Error( err ) } )\"",
+    "lint": "eslint --ignore-pattern '/coverage/' --ignore-pattern '/docs/' --ignore-pattern '!.eslintrc.js' \"**/*.js\"",
+    "lint:docs": "documentation lint *.js",
+    "fix": "yarn lint --fix",
+    "docs": "documentation build *.js --output docs --format html --sort-order alpha",
     "test": "jest --verbose --coverage"
   },
   "jest": {
