@@ -33,7 +33,7 @@ deploy:
     branch: master
 
   on:
-    branch: tim
+    branch: master
   skip_cleanup: true
 
   # TODO: Also publish to npm.

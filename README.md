@@ -1,7 +1,5 @@
 # sftp-to-papertrail
 
-**UNDER CONSTRUCTION.**
-
 A Node module that retrieves log files via SFTP, and logs new entries to Papertrail. Deploys to AWS Lambda and uses S3 for maintaining state.
 
 ## Installation
