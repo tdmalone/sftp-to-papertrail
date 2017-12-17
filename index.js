@@ -1,14 +1,17 @@
 /**
- * A Node module that retrieves one or more log files via SFTP, and logs new entries to Papertrail.
- * Deploys to AWS Lambda and uses S3 for maintaining state.
+ * A Node module that retrieves log files via SFTP, and logs new entries to Papertrail. Deploys to
+ * AWS Lambda and uses S3 for maintaining state.
+ *
+ * TODO: Add ability to manage retrieval of multiple log files at the same time.
  *
  * @author Tim Malone <tdmalone@gmail.com>
  */
 
 'use strict';
 
-const DEFAULT_SFTP_PORT = 22,
-      DEBUG = false;
+const DEBUG = false, // When true, SFTP commands and log file lines will be verbosely output.
+      SILENT = false, // When true, there will be no console output except for errors.
+      DEFAULT_SFTP_PORT = 22;
 
 // @see https://github.com/aws/aws-sdk-js
 // @see https://github.com/jyu213/ssh2-sftp-client
@@ -17,13 +20,10 @@ const DEFAULT_SFTP_PORT = 22,
 const aws = require( 'aws-sdk' ),
       path = require( 'path' ),
       sftp = require( 'ssh2-sftp-client' ),
-      winston = require( 'winston' );
+      winston = require( 'winston' ),
+      { StringDecoder } = require( 'string_decoder' );
 
-// @see https://github.com/kenperkins/winston-papertrail#usage
-// eslint-disable-next-line no-unused-expressions
-require( 'winston-papertrail' ).Papertrail;
-
-const kms = new aws.KMS();
+let s3;
 
 // Whether or not the function is being executed within an AWS Lambda environment.
 // @see http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html
@@ -31,25 +31,60 @@ const isLambda = process.env.AWS_EXECUTION_ENV ? true : false; // eslint-disable
 
 exports.handler = ( event, context, callback ) => {
 
-  /* eslint-disable no-process-env, require-jsdoc */
-  const getEnv = ( envName, defaultValue ) => {
-    if ( process.env[ envName ]) return process.env[ envName ];
-    if ( defaultValue ) return defaultValue;
-    throw new Error( 'Please set ' + envName + '.' );
-  };
-  /* eslint-enable no-process-env, require-jsdoc */
+  const config = getConfig(),
+        getResult = [],
+        sendResult = [];
 
-  // Retrieves configuration from the environment. Sensitive data should be encrypted with AWS KMS.
-  const config = {
+  // Get the two copies of the log files.
+  getResult.push( getLogFileStore( config.s3 ) );
+  getResult.push( getLogFileLatest( config.sftp ) );
+
+  Promise.all( getResult ).then( ( data ) => {
+
+    // Work out which lines in the log file are new since we last checked.
+    const OLD = 0,
+          NEW = 1,
+          newLogLines = compareLogFiles( data[ OLD ], data[ NEW ]);
+
+    // If there's new log lines, or we didn't have an old log file, store the new log file.
+    if ( newLogLines || ! data[ OLD ]) {
+      sendResult.push( saveToStore( data[ NEW ], config.s3 ) );
+    }
+
+    // If there's new log lines, send them to Papertrail.
+    if ( newLogLines ) {
+      sendResult.push( sendToPapertrail( newLogLines, config.papertrail ) );
+    }
+
+    return Promise.all( sendResult );
+
+  }).then( ( result ) => {
+    log( 'Done.' );
+    callback( null, result );
+  }).catch( ( error ) => {
+    callback( error );
+  });
+
+}; // Exports.handler.
+
+exports.compareLogFiles = compareLogFiles;
+
+/**
+ * Retrieves configuration from the environment. Sensitive data should be encrypted with AWS KMS.
+ *
+ * @returns {Object} A configuration object containing sftp, s3 and papertrail objects.
+ */
+function getConfig() {
+  return {
 
     sftp: {
 
-      host:       getEnv( 'STP_SFTP_HOST' ),
-      port:       getEnv( 'STP_SFTP_PORT', DEFAULT_SFTP_PORT ),
-      username:   getEnv( 'STP_SFTP_USERNAME' ),
-      password:   getEnv( 'STP_SFTP_PASSWORD' ),
-      path:       getEnv( 'STP_SFTP_PATH' ),
-      debug:      DEBUG ? console.log : null,
+      host:     getEnv( 'STP_SFTP_HOST' ),
+      port:     getEnv( 'STP_SFTP_PORT', DEFAULT_SFTP_PORT ),
+      username: getEnv( 'STP_SFTP_USERNAME' ),
+      password: getEnv( 'STP_SFTP_PASSWORD' ),
+      path:     getEnv( 'STP_SFTP_PATH' ),
+      debug:    DEBUG ? log : null,
 
       // Explicitly provide diffie-hellman algorithms to resolve handshake issues.
       algorithms: {
@@ -57,17 +92,15 @@ exports.handler = ( event, context, callback ) => {
           'diffie-hellman-group1-sha1',
           'diffie-hellman-group-exchange-sha1',
           'diffie-hellman-group14-sha1',
-          'diffie-hellman-group-exchange-sha256',
+          'diffie-hellman-group-exchange-sha256'
         ]
       }
     },
 
-    // For S3 access, credentials are taken directly from the environment, eg. AWS_ACCESS_KEY_ID and
-    // AWS_ACCESS_KEY or ~/.aws/credentials.
     s3: {
       bucket: getEnv( 'STP_S3_BUCKET' ),
       region: getEnv( 'STP_S3_REGION' ),
-      path:   getEnv( 'STP_SFTP_PATH' )
+      path:   getEnv( 'STP_SFTP_HOST' ) + '/' + getEnv( 'STP_SFTP_PATH' )
     },
 
     // @see https://github.com/kenperkins/winston-papertrail#usage
@@ -79,37 +112,21 @@ exports.handler = ( event, context, callback ) => {
       colorize: true
     }
 
-  }; // Const config.
+  }; // Return object.
+} // Function getConfig;
 
-  // Get the two copies of the log files.
-  const getOld = getLogFileStore( config.s3 ),
-        getNew = getLogFileLatest( config.sftp );
-
-  // A Promise to retrieve both of the files.
-  Promise.all([ getOld, getNew ]).then( ( data ) => {
-
-    // Work out which lines in the log file are new since we last checked.
-    const logFileOld = 0,
-          logFileNew = 1,
-          newLogLines = compareLogFiles( data[ logFileOld ], data[ logFileNew ]);
-
-    // Save the new log file to our store, and send the new log lines to Papertrail.
-    const store = saveToStore( logFileNew, config.s3 ),
-          send = sendToPapertrail( newLogLines, config.papertrail );
-
-    // A Promise to complete storing and sending.
-    return Promise.all([ store, send ]);
-
-  }).then( ( result ) => {
-    console.log( 'Done.' );
-    callback( null, result );
-  }).catch( ( error ) => {
-    callback( error );
-  });
-
-}; // Exports.handler.
-
-exports.compareLogFiles = compareLogFiles;
+/**
+ * Connects to AWS S3, storing the reference in the upper scope for other functions to access.
+ * Credentials are managed automatically by the AWS SDK, usually using ~/.aws/credentials or a
+ * Lambda role.
+ *
+ * @param {string} region The AWS region to connect to.
+ * @returns {undefined}
+ */
+function connectToS3( region ) {
+  log( 'Connecting to S3...' );
+  s3 = new aws.S3({ region: region });
+}
 
 /**
  * Gets the latest log file contents from an SFTP server.
@@ -122,16 +139,13 @@ function getLogFileLatest( config ) {
   return new Promise( ( resolve, reject ) => {
 
     const client = new sftp();
-
-    console.log( 'Connecting to SFTP server...' );
-
-    // TODO: How do we disconnect when we're done?
+    log( 'Connecting to SFTP server...' );
 
     decrypt( config.password ).then( ( password ) => {
       config.password = password;
       return client.connect( config );
     }).then( () => {
-      console.log( 'Retrieving latest log file...' );
+      log( 'Retrieving latest log file...' );
       return client.get( config.path );
     }).then( ( stream ) => {
 
@@ -139,13 +153,16 @@ function getLogFileLatest( config ) {
 
       stream.on( 'data', ( chunk ) => {
         chunks.push( chunk );
-        console.log( chunks.length + ' part' + ( 1 < chunks.length ? 's' : '' ) + '...' );
+        log( chunks.length + ' ' + maybePlural( chunks.length, 'part', 'parts' ) + '...' );
       }).on( 'end', () => {
 
-        const contents = chunks.join( '' ),
+        const contents = chunks.join( '' ).trim(),
               lines = contents.split( '\n' ).length;
 
-        console.log( 'Retrieved ' + lines + ' lines in approx ' + contents.length + ' bytes.' );
+        // Disconnect from the SFTP server.
+        client.end();
+
+        log( 'Retrieved ' + lines + ' lines in approx ' + contents.length + ' bytes.' );
         resolve( contents );
 
       });
@@ -179,11 +196,17 @@ function getLogFileStore( config ) {
  * @param {string} oldContents The contents of the old (last known state of the) log file.
  * @param {string} newContents The contents of the new (latest) log file.
  * @returns {string} The lines that differ, for example, any new lines present in the new log file
- *                   that didn't exist in the old.
+ *                   that didn't exist in the old. If an old log file is not available, a blank
+ *                   string will be returned to avoid returning everything when logging a new file.
  */
 function compareLogFiles( oldContents, newContents ) {
 
-  console.log( 'Looking for new log entries...' );
+  if ( ! oldContents ) {
+    log( 'As we have no old log file to compare with, no log lines will be selected.' );
+    return '';
+  }
+
+  log( 'Looking for new log entries...' );
 
   // Split the log file lines into arrays, filtering out any blank lines.
   const oldLines = oldContents.split( '\n' ).filter( () => true ),
@@ -194,7 +217,7 @@ function compareLogFiles( oldContents, newContents ) {
   // eslint-disable-next-line no-magic-numbers
   const difference = newLines.filter( line => 0 > oldLines.indexOf( line ) );
 
-  console.log( 'Found ' + difference.length + ' new lines.' );
+  log( 'Found ' + difference.length + ' new lines.' );
 
   // Return the new lines as a string, with any outside whitespace removed.
   return difference.join( '\n' ).trim();
@@ -228,7 +251,11 @@ function saveToStore( contents, config ) {
 function sendToPapertrail( logLines, config ) {
   return new Promise( ( resolve, reject ) => {
 
-    console.log( 'Connecting to Papertrail...' );
+    log( 'Connecting to Papertrail...' );
+
+    // @see https://github.com/kenperkins/winston-papertrail#usage
+    // eslint-disable-next-line no-unused-expressions
+    require( 'winston-papertrail' ).Papertrail;
 
     const papertrail = new winston.transports.Papertrail( config ),
           logger = new winston.Logger({ transports: [ papertrail ] });
@@ -237,19 +264,19 @@ function sendToPapertrail( logLines, config ) {
       reject( error );
     }).on( 'connect', () => {
 
-      const splitLines = logLines.split( '\n' );
-      console.log( 'Logging ' + splitLines.length + ' lines...' );
+      const lines = logLines.split( '\n' );
+      const logId = config.hostname + ' / ' + config.program;
+      log( 'Logging ' + lines.length + ' lines (' + logId + ')...' );
 
-      splitLines.forEach( ( line ) => {
-        //logger.info( line );
-        //console.log( line );
+      lines.forEach( ( line ) => {
+        logger.info( line );
+        if ( DEBUG ) log( line );
       });
 
       logger.close();
       resolve();
 
-    });
-
+    }); // On connect.
   }); // Return Promise.
 } // Function sendToPapertrail.
 
@@ -270,12 +297,52 @@ function decrypt( encrypted ) {
       return;
     }
 
-    console.log( 'Decrypting SFTP password...' );
+    log( 'Decrypting SFTP password...' );
+
+    const kms = new aws.KMS();
 
     kms.decrypt({ CiphertextBlob: Buffer.from( encrypted, 'base64' ) }, ( error, data ) => {
       if ( error ) reject( error );
-      resolve( data.Plaintext.toString( 'ascii' ) );
+      else resolve( data.Plaintext.toString( 'ascii' ) );
     });
 
   }); // Return Promise.
 } // Function decrypt.
+
+/**
+ * Maybe pluralises a string depending on the given number.
+ *
+ * @param {integer} number  The number you wish to refer to.
+ * @param {string} singular The singular term for referring to 1 of number.
+ * @param {string} plural   The plural term for referring to 0 or > 1 of number.
+ * @returns {string} Either the singular or plural string.
+ */
+function maybePlural( number, singular, plural ) {
+  return 1 === number ? singular : plural; // eslint-disable-line no-magic-numbers
+}
+
+/**
+ * Gets an environment variable, throwing an error if it doesn't exist (unless a default value is
+ * provided).
+ *
+ * @param {string} envName      The name of the environment variable to retrieve.
+ * @param {string} defaultValue An optional default value to use if the variable isn't set, which
+ *                              essentially renders the variable optional.
+ * @throws Throws an error if a required variable is not set.
+ * @returns {string} The value of the requested environment variable.
+ */
+function getEnv( envName, defaultValue ) {
+  if ( process.env[ envName ]) return process.env[ envName ]; // eslint-disable-line no-process-env
+  if ( defaultValue ) return defaultValue;
+  throw new Error( 'Please set ' + envName + '.' );
+}
+
+/**
+ * A console log wrapping function that only logs if SILENT is not true.
+ *
+ * @returns {undefined}
+ */
+function log() {
+  if ( SILENT ) return;
+  console.log.apply( null, arguments );
+}
