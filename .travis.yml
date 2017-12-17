@@ -1,5 +1,9 @@
 language: node_js
 
+# Use a similar version to that on Lambda.
+node_js:
+  - 6
+
 cache:
   yarn: true
   directories:
@@ -17,25 +21,38 @@ script:
   - yarn lint
   - yarn test
 
+  # TODO: Add some form of real-world integration testing.
+
 deploy:
-  on:
+
+  # Use a custom version of dpl.
+  # @see https://github.com/travis-ci/dpl/blob/master/TESTING.md
+  # @see https://github.com/tdmalone/dpl/
+  edge:
+    source: tdmalone/dpl
     branch: master
+
+  on:
+    branch: tim
   skip_cleanup: true
+
+  # TODO: Also publish to npm.
 
   # @see https://docs.travis-ci.com/user/deployment/lambda/
   provider: lambda
+  publish: true
   function_name: "papertrail-rsync"
   region: "ap-southeast-2"
   role: "arn:aws:iam::300761597318:role/lambda_s3_bucket"
   runtime: "nodejs6.10"
   handler_name: "handler"
-  access_key_id: "AKIAI2EGLBKJJUQZE3LA"
+  access_key_id: "AKIAJRRU6C3AQW3QB4MQ"
   secret_access_key:
-    secure: "Szh5glx2HkqPfwj7CHGXYaUyXF4gRlo5HFLQRk6UXpmCPm0wi5+C59/i5ieMECE9nmw4/0gnWWNNDtWabLI4aXHiD9OIcJaEBY81qRyEizL9uLGzytWQHQaN9iFi7nF/LwvA0/TzlTjYBcfMvsYwLFznPmunVcWkWyeWn+SeRWUwPh0ocldDMAeNt0x4W31sh1mNyT9SYIoeqsZ/mB3prCxQpgTyAAl/mNzJ1/l/9EKEbZpAXkCWN8O9ymwKMzaiG3tNU0Td4XkEbbn+ynwyReHQyWd1Eg0KeWwkoMfeQycvZVyBfnypmU5/70ktZcCR554nUnC4bx62myv8G5Gje9KDYJgyG+4x0HL9MQfS2SN5xsoZU9P/JV3tFQxG5BVI1ye73JtMUMpNUnqkYvqlD1v7VpJK5310u9/StNnQKs0+8bAEy6LqMXDeMCMnbDkVa8FANqgeOsmuc7/xJvuyOaqRytlAxiPKkNCHZ8K9/yPJlekJ3uSGmLQkfwVpVwsfkun00KHUgcxiKfmNq65tNpPnhD2IHSUo2e1KahWgtVcFkkiY8EoywFjVioDvbP2TDDoeqcjRds5dn4NkzuEK2veeVfK2zlAw0Wcn4ks32ev4GCAkryo1L+FWcxCH+eWelpYveXypXXA5GO1mzvxhADRQmlE2vkMZQ/q15EapD/I="
+    secure: "WFCWQs5c5gu+gnzd+z0iGs5UVzofDaK2c6HZFXC5bz+ERCA47HA26wnY8S//Y+wN59mFyY9DxecN6tPa5+JUdDpZECb7jbS26Mod8HC8kuA+v5WG4JVz8lNNHawx1DBPE1C/YOKg/fNx64vc6tYqWcdLr+oS75GeK6dfseHaH1qPUELYTmSZQari3Q5xR5l0ux2hGtxQ7vCmnheBPpu3+dm5/Lpmthrx1NUTIeRDxs1KlreCqGYeEd6fpyRvWQUhYX6b6wTw+IuqGewY8vcyxtCcbom1coR+nYIB+xmZPEsd6z9Xtb/bQmQsi7NDqoF8gvV68YW4N2cPx8UmEzlWUFnSYkaoCvXAx/FveDnlU/b4dEOgjJJmFrfYnduh9MnWykF6p4UhVgN0+5fTV/ojd65XTJzHQsy5K5klHop6xe7wPief/XfjD4gZLuI+EWTRaj8Vlf0XgP7LsuewY+tQ5G9UQj2UzfkqOvo4v0qr66Uv6GTL/7NQwyLkNE7Z/mKIQM2Pd8e6BOYSNyZ3d2nr8VDGFXrV5h3QRN2mzsKUVWN0gTe/y1YDupnx3uUjA6UXrF/pLGCkQtr6KjXuDAq5crCTCoTdtqMbp80p3P1lRdAb2eWMDI1LTex2PHSLrTUuCkeUAP7oavwmDn2UzOAwqNBSvTb1W6FAbCoX2HH5a7M="
 
 notifications:
   email: false
-  webhooks:
-    urls:
-      - https://chr-cicd.herokuapp.com/hooks/travis.php
+  slack:
     on_start: always
+    rooms:
+      - secure: "uJ/pVszSOwliIpoc+LBSy/6bs5cAR0GqrycWvYkpmrRdY/Yk96kQtDLKnafYCsJc/veMMOIL3O+KRVnO+tX4BHcNBuVWNowgAaoHCPIqdfzwjG/7m+G6rW1rKmeduc05gAZLlZu4WWWHagin3MHdjtHcTTsL2MhK98K8C/YFkqKOvRWtV+KgU0+/Ij5h5qwofA7qd808Et42rlhAV1Fd//cjcNGw7SRI/IDGnofynoVPNAydT3oGVncPGDnQvd59PVHe41x3dcLwsPG0wgd6NcgBn0g+4mkUtJ+JpnhnNbZYTyeHvCDeOTysH5IvbDqbiq8bS386nBkT1yFYpfRBF4PFv0BDpt5Zt1vkdHmgj1ns6koolTUq6dO+gzLUq52yFKvQXb2jXMUFg/hNGJN7RMq/ke6NuMH/mKVD1iIq3bbZq77b//vV8YPVqwQt0jjvTFF36yS+u6nwVbinQSBpgi9T7kCm6AA24FuVrdN7wV0jcIqY0VGTEeg8CE+NZmdL/SL6Cxl0WwBZu2tnm8N+CwEsuNUPQLZKBkVud9YdAFzNUvE0keorhcRl4ZB6QHYVmFss2WPt7XdusKc/94M30X0HQ1xMgHWha7gtNi0s9HikTVXQjDq9iXQMiS0ZBghGPo/Dx3zSo01eyOVzD0xTLss8Bf4znAlEHfARENjgIFg="
