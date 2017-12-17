@@ -1,6 +1,8 @@
 /**
  * Simple test suite for (the easily testable parts of) sftp-to-papertrail.
  *
+ * TODO: Add additional tests with mocked SFTP, Winston and AWS modules.
+ *
  * @author Tim Malone <tdmalone@gmail.com>
  */
 

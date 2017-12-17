@@ -21,6 +21,8 @@ script:
   - yarn lint
   - yarn test
 
+  # TODO: Add some form of real-world integration testing.
+
 deploy:
 
   # Use a custom version of dpl.
@@ -34,6 +36,8 @@ deploy:
     branch: tim
   skip_cleanup: true
 
+  # TODO: Also publish to npm.
+
   # @see https://docs.travis-ci.com/user/deployment/lambda/
   provider: lambda
   publish: true
@@ -42,13 +46,12 @@ deploy:
   role: "arn:aws:iam::300761597318:role/lambda_s3_bucket"
   runtime: "nodejs6.10"
   handler_name: "handler"
-  access_key_id: "AKIAI2EGLBKJJUQZE3LA"
+  access_key_id: "AKIAJRRU6C3AQW3QB4MQ"
   secret_access_key:
-    secure: "qViya0nTw/wUbLbClJLaMFwyZd97CEQJM+i/gWhwc4/rhjSnMV4Qr/WTgOY4syEarYhlUtJ+379vEAll8z4pVYv+wJ+3HpbMsAcIuZ3A3rgr4C4Lw0c5WkyehX15ab8QzZqxu3TkrP8CNqCEtocs2euHokc5bNbvYEAZhavDQXOvcSOssAt6kACzBq+/Q5h9yCCzoAKhVpKCPek85sFe7rzZcvJGnuJzt0QnWxTL3lBGnnoLIfNp75vzoI0r7YE4ouSSJHnpwkJURD+GrKZpCn1nucbIMHjqej3Jdel09rTK1IzZZjjktBSKvfgH401tZn8JVZr3KV7n8ce8ekysFWj74hZg+fI8+yzpi9K7yT6RNvdaa6aCQVdsbFEkSPJBiBIwTrN3dbp0Q2Py/omlZNzcB5ac0S11zXWQXwH8ekmyMES6MEuTt/ge65WI7aN4fIpGva/znc842q56TfpVodAO++O0Oj8S5+Ej4EG4errOY/CRsB7sSMVCRFmc/4Y3vkX3CLrgJGl7TfdY62Fxxhj8tpxXK22zX0FDDF7yM0QlF4X07DF3RgLvtgwtX0OlsFZSGT6cUZC4ubNAoUw+9hOCS5MFXTyrMNzf55dQSKSmcdmRL4alrXOR+daaReNgpKxIeN6/IoPTL03Wvv+bzZz973JgXIK2L+r2BrFQSik="
+    secure: "WFCWQs5c5gu+gnzd+z0iGs5UVzofDaK2c6HZFXC5bz+ERCA47HA26wnY8S//Y+wN59mFyY9DxecN6tPa5+JUdDpZECb7jbS26Mod8HC8kuA+v5WG4JVz8lNNHawx1DBPE1C/YOKg/fNx64vc6tYqWcdLr+oS75GeK6dfseHaH1qPUELYTmSZQari3Q5xR5l0ux2hGtxQ7vCmnheBPpu3+dm5/Lpmthrx1NUTIeRDxs1KlreCqGYeEd6fpyRvWQUhYX6b6wTw+IuqGewY8vcyxtCcbom1coR+nYIB+xmZPEsd6z9Xtb/bQmQsi7NDqoF8gvV68YW4N2cPx8UmEzlWUFnSYkaoCvXAx/FveDnlU/b4dEOgjJJmFrfYnduh9MnWykF6p4UhVgN0+5fTV/ojd65XTJzHQsy5K5klHop6xe7wPief/XfjD4gZLuI+EWTRaj8Vlf0XgP7LsuewY+tQ5G9UQj2UzfkqOvo4v0qr66Uv6GTL/7NQwyLkNE7Z/mKIQM2Pd8e6BOYSNyZ3d2nr8VDGFXrV5h3QRN2mzsKUVWN0gTe/y1YDupnx3uUjA6UXrF/pLGCkQtr6KjXuDAq5crCTCoTdtqMbp80p3P1lRdAb2eWMDI1LTex2PHSLrTUuCkeUAP7oavwmDn2UzOAwqNBSvTb1W6FAbCoX2HH5a7M="
 
 notifications:
   email: false
-  webhooks:
-    urls:
-      - https://chr-cicd.herokuapp.com/hooks/travis.php
-    on_start: always
+  slack:
+    rooms:
+      - secure: "uJ/pVszSOwliIpoc+LBSy/6bs5cAR0GqrycWvYkpmrRdY/Yk96kQtDLKnafYCsJc/veMMOIL3O+KRVnO+tX4BHcNBuVWNowgAaoHCPIqdfzwjG/7m+G6rW1rKmeduc05gAZLlZu4WWWHagin3MHdjtHcTTsL2MhK98K8C/YFkqKOvRWtV+KgU0+/Ij5h5qwofA7qd808Et42rlhAV1Fd//cjcNGw7SRI/IDGnofynoVPNAydT3oGVncPGDnQvd59PVHe41x3dcLwsPG0wgd6NcgBn0g+4mkUtJ+JpnhnNbZYTyeHvCDeOTysH5IvbDqbiq8bS386nBkT1yFYpfRBF4PFv0BDpt5Zt1vkdHmgj1ns6koolTUq6dO+gzLUq52yFKvQXb2jXMUFg/hNGJN7RMq/ke6NuMH/mKVD1iIq3bbZq77b//vV8YPVqwQt0jjvTFF36yS+u6nwVbinQSBpgi9T7kCm6AA24FuVrdN7wV0jcIqY0VGTEeg8CE+NZmdL/SL6Cxl0WwBZu2tnm8N+CwEsuNUPQLZKBkVud9YdAFzNUvE0keorhcRl4ZB6QHYVmFss2WPt7XdusKc/94M30X0HQ1xMgHWha7gtNi0s9HikTVXQjDq9iXQMiS0ZBghGPo/Dx3zSo01eyOVzD0xTLss8Bf4znAlEHfARENjgIFg="
