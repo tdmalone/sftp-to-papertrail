@@ -19,7 +19,7 @@
     "lint:docs": "documentation lint *.js",
     "fix": "yarn lint --fix",
     "docs": "documentation build *.js --output docs --format html --sort-order alpha",
-    "test": "jest --verbose --coverage"
+    "test": "STP_SFTP_HOST=test STP_SFTP_USERNAME=test STP_SFTP_PASSWORD=test STP_SFTP_PATH=test STP_S3_BUCKET=test STP_PAPERTRAIL_HOST=test STP_PAPERTRAIL_PORT=test jest --verbose --coverage"
   },
   "jest": {
     "testMatch": [
