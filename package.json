@@ -36,5 +36,16 @@
     "@chromatix/eslint-config-chromatix": "^0.0.14",
     "jest": "^21.2.1",
     "jest-tobetype": "^1.1.0"
-  }
+  },
+  "keywords": [
+    "papertrail",
+    "sftp",
+    "logging",
+    "logs",
+    "tools",
+    "aws",
+    "lambda",
+    "serverless",
+    "nodejs"
+  ]
 }
