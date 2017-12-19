@@ -20,10 +20,10 @@ module.exports = {
    *
    * @returns {undefined}
    */
-  log: () => {
+  log: ( ...args ) => {
     const config = require( './get-config' )();
     if ( config.silent ) return;
-    console.log.apply( null, arguments );
+    console.log.apply( null, args );
   }
 
 }; // Module.exports.
