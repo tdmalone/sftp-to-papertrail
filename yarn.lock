@@ -2,7 +2,7 @@
 # yarn lockfile v1
 
 
-"@chromatix/eslint-config-chromatix@^0.0.14":
+"@chromatix/eslint-config-chromatix@*":
   version "0.0.14"
   resolved "https://registry.yarnpkg.com/@chromatix/eslint-config-chromatix/-/eslint-config-chromatix-0.0.14.tgz#b75c67fcc399a1e9d834808b883c698adca9f01f"
   dependencies:
@@ -735,6 +735,13 @@ escodegen@^1.6.1:
     optionator "^0.8.1"
   optionalDependencies:
     source-map "~0.5.6"
+
+eslint-config-tdmalone@*:
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/eslint-config-tdmalone/-/eslint-config-tdmalone-0.0.1.tgz#c122a7cfa49503c04fa8b51d321a6b470033c8ca"
+  dependencies:
+    "@chromatix/eslint-config-chromatix" "*"
+    eslint "^4.8.0"
 
 eslint-config-wordpress@^2.0.0:
   version "2.0.0"

@@ -1,8 +1,6 @@
 
 'use strict';
 
-  module.exports = {
-    'extends': [
-      'tdmalone'
-    ]
-  };
+module.exports = {
+  extends: [ 'tdmalone' ]
+};
