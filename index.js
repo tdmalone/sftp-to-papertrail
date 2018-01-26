@@ -4,7 +4,6 @@
  *
  * TODO: Add ability to manage retrieval of multiple log files at the same time.
  *
- * @name _SFTP-to-Papertrail
  * @author Tim Malone <tdmalone@gmail.com>
  */
 
