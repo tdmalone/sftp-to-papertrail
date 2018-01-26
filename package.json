@@ -33,7 +33,7 @@
     "winston-papertrail": "^1.0.5"
   },
   "devDependencies": {
-    "@chromatix/eslint-config-chromatix": "^0.0.14",
+    "eslint-config-tdmalone": "*",
     "jest": "^21.2.1",
     "jest-tobetype": "^1.1.0"
   }
