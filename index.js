@@ -77,6 +77,13 @@ function syncFile( config ) {
       sendResult.push( sendToPapertrail( newLogLines, config ) );
     }
 
+    if ( ! sendResult.length ) {
+      log( config.sftp.path, 'Nothing to do.' );
+      sendResult.push( ( new Promise( ( resolve ) => {
+        resolve( 'Nothing to do.' );
+      })));
+    }
+
     return Promise.all( sendResult );
 
   }); // Return Promise.all.
@@ -285,7 +292,7 @@ function saveToStore( contents, config ) {
       ContentType: 'text/plain'
     }, ( error ) => {
       if ( error ) reject( error );
-      else resolve();
+      else resolve( 'Log file saved.' );
     });
 
   }); // Return Promise.
@@ -307,7 +314,7 @@ function sendToPapertrail( logLines, config ) {
     // eslint-disable-next-line no-unused-expressions
     require( 'winston-papertrail' ).Papertrail;
 
-    const papertrail = new winston.transports.Papertrail( config ),
+    const papertrail = new winston.transports.Papertrail( config.papertrail ),
           logger = new winston.Logger({ transports: [ papertrail ] });
 
     papertrail.on( 'error', ( error ) => {
@@ -324,7 +331,7 @@ function sendToPapertrail( logLines, config ) {
       });
 
       logger.close();
-      resolve();
+      resolve( 'Logged ' + lines.length + ' lines.' );
 
     }); // On connect.
   }); // Return Promise.
