@@ -74,7 +74,7 @@ exports.handler = ( event, context, callback ) => {
 exports.compareLogFiles = compareLogFiles;
 
 /**
- * Retrieves configuration from the environment. Sensitive data should be encrypted with AWS KMS.
+ * Retrieves configuration from the environment.
  *
  * @returns {Object} A configuration object containing sftp, s3 and papertrail objects.
  */
@@ -145,10 +145,7 @@ function getLogFileLatest( config ) {
     const client = new sftp();
     log( 'Connecting to SFTP server...' );
 
-    decrypt( config.password ).then( ( password ) => {
-      config.password = password;
-      return client.connect( config );
-    }).then( () => {
+    client.connect( config ).then( () => {
       log( 'Retrieving latest log file...' );
       return client.get( config.path );
     }).then( ( stream ) => {
@@ -321,35 +318,6 @@ function sendToPapertrail( logLines, config ) {
     }); // On connect.
   }); // Return Promise.
 } // Function sendToPapertrail.
-
-/**
- * Decrypts an encrypted string with AWS KMS.
- *
- * Returns the string as-is if the execution environment is not AWS Lambda, for example if you are
- * running this function locally, you'll probably have your env vars available in plain text.
- *
- * @param {string} encrypted The encrypted string.
- * @returns {Promise} A Promise to provide the decrypted string.
- */
-function decrypt( encrypted ) {
-  return new Promise( ( resolve, reject ) => {
-
-    if ( ! isLambda ) {
-      resolve( encrypted );
-      return;
-    }
-
-    log( 'Decrypting SFTP password...' );
-
-    const kms = new aws.KMS();
-
-    kms.decrypt({ CiphertextBlob: Buffer.from( encrypted, 'base64' ) }, ( error, data ) => {
-      if ( error ) reject( error );
-      else resolve( data.Plaintext.toString( 'ascii' ) );
-    });
-
-  }); // Return Promise.
-} // Function decrypt.
 
 /**
  * Maybe pluralises a string depending on the given number.
