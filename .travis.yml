@@ -13,7 +13,7 @@ env:
     - STP_SFTP_HOST=appserver.dev.aea704e1-f89f-4a49-a160-c0d9a71c4671.drush.in
     - STP_SFTP_PORT=2222
     - STP_SFTP_USERNAME=dev.aea704e1-f89f-4a49-a160-c0d9a71c4671
-    - STP_SFTP_PATH=logs/nginx-access.log,logs/nginx-error.log,logs/php-fpm-error.log,logs/php-slow.log,logs/pyinotify.log,logs/watcher.log
+    - STP_SFTP_PATH=logs/nginx-access.log,logs/nginx-error.log,logs/php-fpm-error.log,logs/php-slow.log
     - STP_S3_BUCKET=aws-admin-timmalone
     - STP_PAPERTRAIL_HOST=logs5.papertrailapp.com
 
