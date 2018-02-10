@@ -55,7 +55,8 @@ The easiest way to contribute is to fork and clone the repo locally, install dep
 
 ## TODO
 
-- Add support for dealing with multiple log files at once
+- Potentially add support for globbing or listing & downloading entire directories
+- Potentially add support for multiple SFTP accounts at once
 - Work out the difference between various S3 errors and if it's a connection failure
 - Add additional tests with mocked SFTP, Winston and AWS modules
 - Link up Docker tests to run through Travis
