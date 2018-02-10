@@ -1,6 +1,6 @@
 {
   "name": "sftp-to-papertrail",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "A Node module that retrieves one or more log files via SFTP, and logs new entries to Papertrail. Deploys to AWS Lambda and uses S3 for maintaining state.",
   "homepage": "https://github.com/tdmalone/sftp-to-papertrail#readme",
   "repository": "git+https://github.com/tdmalone/sftp-to-papertrail.git",
