@@ -38,11 +38,17 @@ script:
   - yarn test
 
 before_deploy: rm -rf node_modules && yarn --prod && rm -rf tests .*rc.js
+before_deploy: yarn remove aws-sdk && rm -rf coverage node_modules tests .*rc.js && yarn --prod
 
 deploy:
 
-  - provider: lambda
-    publish: true
+  # Deploy to $LATEST on dev branch. (i.e. don't publish a new version).
+
+  - on:
+      branch: dev
+    publish: false
+
+    provider: lambda
     function_name: $LAMBDA_NAME
     region: $AWS_DEFAULT_REGION
     role: arn:aws:iam::873114526714:role/genericLambdaRole
@@ -51,27 +57,47 @@ deploy:
     timeout: 120
     handler_name: handler
     access_key_id: $AWS_ACCESS_KEY_ID
-    secret_access_key:
-      secure: UikyNIAcjzs1aDNM+dKag915vmCei0V2jWq8UyFyrc9dmLAE2MuT4wd4ztn073PXKhs84v74aYyndhB9RNVYwKYc8NGoAbLwHM2cXkvMy65/uCfF+/v2mXFzqHPIiIJTI4xJ88a5NoZCbkRwDXPv0HLn/cnjsGBL1AM7OmK7YsOLkDCCyqmhBilWhIGbPqiiJhGWBL6oSg6kdW2TTFyP+dJX52ZVPb68MlBhRX/XqnB2BzBHQKK+OOWO+reziv9sK+l4OjS93iRT+acJc28h4Sc4UMK+YVJPVmiuqYrxCb30lqoJUqLbnGDlCibbdacYypi2p1sEGDJ9dQMOqaOx/oQL9KfvmxCybTjzzVi5W5eXTbKfdPL40ZHVW8/k9x6EVCviV5u6nMfnbL5TOXi9ybunPYQqN0tsfStvUQ2hDrwaDLu6UFBlBtqtSNXmhxqQEFeMgIbxyq+XE2yp0oLaGmLuALc9tRdchq68Lvy6RtpNIA5+V6KJKrcEhokpR5bV1nEug49bflg1rOnDcqcRnsKe3izoloM6mBpmZP22axUd+o1Yh1fK6hLZjEFbswMAiJF+4kbVKyrDTjtSzf3l4vzsz/Fe+mUBZ7Hn44laDkc4W87l0kwgTd4PqBfNTM6wGR0b2/i6j9jnnaEH0QXPmXnCdWsS8tVKrUJMzQhTL2g=
+    secret_access_key: $AWS_SECRET_ACCESS_KEY
     skip_cleanup: true
-    on:
-      branch: master
 
-  - provider: npm
+  # Deploy and publish a new version on master branch.
+
+  - on:
+      branch: master
+    publish: true
+
+    provider: lambda
+    function_name: $LAMBDA_NAME
+    region: $AWS_DEFAULT_REGION
+    role: arn:aws:iam::873114526714:role/genericLambdaRole
+    description: Retrieves log files via SFTP, and logs new entries to Papertrail.
+    runtime: nodejs6.10
+    timeout: 120
+    handler_name: handler
+    access_key_id: $AWS_ACCESS_KEY_ID
+    secret_access_key: $AWS_SECRET_ACCESS_KEY
+    skip_cleanup: true
+
+  # Deploy to npm on master with a new tag.
+
+  - on:
+      branch: master
+      tags: true
+
+    provider: npm
     email: tdmalone@gmail.com
     api_key:
       secure: fdg6DUS+Zg3mi3saDcbp4Ns++9B0sgJpSuEDfq/j1InwRYNhJSQmrpzHj1ci2ngmfkEpuKkHTLGC6rRFIO++Q0A0sUblbbEIpBbSgkH2ASzeSTM83d31CK/mq3/hrGSfFa0jo3boZdMf2bQpoaZuWnpe1ZfMjJaWr57BY2VNAFucKyfdgKsb93ZS8AoVREYcePDtPgZ/Ed6A9r/ByCP6TTZhkxltZU4XSpkPMJ0HRG+HNlTzc+DN79Q7PUNMnc4d39p7H4nFzdBuUjyKbpF3G6ppb3w707RKwIUelbo8Q1bEn13al0HWRsramqyQfe6lp25Ej88hSZrHreKT0rVpip7cAJB4adojr4L3h5pRyYixtSvXLIgfy/T+RkQ1eeLrfzjHvviGqF9ajQL34YNyC7BGuBny0RlmjCsH+Z96idgBFi6P6r2ZHpvWkK3UAZzM6veA9K6FetNmOn70nIZBUJWMCxOWPGb221EbqRHlp+CGvC/Xj+1rlrt0aNRZNh6wMCLIS0NZi3Jxy18P0poLjf9ZNcaIB90MH9cNjhdK4FE8JiY0NIoocYQ1vtzcLlq0oj/hi8npcnVupMj6nj+/7t8sw4o9JK6RkK0UOJaPtxQxxSTDUyg8n7VqdW6OblwMfDFKFUnj5C/PIf6lDVmX2QFLw0cM6VeFxuVNz92b0DI=
     skip_cleanup: true
-    on:
-      branch: master
-      tags: true
 
 after_deploy:
 
   # Set a Lambda alias to the most recently deployed version.
-  - pip install awscli --upgrade --user
-  - export MOST_RECENT=$(aws lambda list-versions-by-function --function "${LAMBDA_NAME}" --max-items 10000 | node -e "let stdin=''; process.stdin.on('data',(chunk)=>{stdin+=chunk}).on('end',()=>{console.log(JSON.parse(stdin).Versions.pop().Version)})")
-  - aws lambda update-alias --function-name "${LAMBDA_NAME}" --name "${LAMBDA_ALIAS}" --function-version "${MOST_RECENT}"
+  - if [ "master" = "${TRAVIS_BRANCH}" ]; then
+      pip install awscli --upgrade --user;
+      export MOST_RECENT=$(aws lambda list-versions-by-function --function "${LAMBDA_NAME}" --max-items 10000 | node -e "let stdin=''; process.stdin.on('data',(chunk)=>{stdin+=chunk}).on('end',()=>{console.log(JSON.parse(stdin).Versions.pop().Version)})");
+      aws lambda update-alias --function-name "${LAMBDA_NAME}" --name "${LAMBDA_ALIAS}" --function-version "${MOST_RECENT}";
+    fi;
 
 notifications:
   email: false
