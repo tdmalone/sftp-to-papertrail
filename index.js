@@ -1,10 +1,7 @@
 /**
- * A Node module that retrieves log files via SFTP, and logs new entries to Papertrail. Deploys to
- * AWS Lambda and uses S3 for maintaining state.
+ * A Lambda function that retrieves log files via SFTP, and logs new entries to Papertrail. Uses S3
+ * for maintaining state.
  *
- * TODO: Add ability to manage retrieval of multiple log files at the same time.
- *
- * @name _SFTP-to-Papertrail
  * @author Tim Malone <tdmalone@gmail.com>
  */
 
@@ -12,8 +9,11 @@
 
 const DEBUG = false, // When true, SFTP commands and log file lines will be verbosely output.
       SILENT = false, // When true, there will be no console output except for errors.
-      DEFAULT_SFTP_PORT = 22,
-      DEFAULT_AWS_REGION = 'us-east-1';
+      DEFAULT_SFTP_PORT = 22;
+
+/* eslint-disable no-process-env */
+const AWS_DEFAULT_REGION = process.env.AWS_DEFAULT_REGION || 'us-east-1';
+/* eslint-enable no-process-env */
 
 // @see https://github.com/aws/aws-sdk-js
 // @see https://github.com/jyu213/ssh2-sftp-client
@@ -27,40 +27,17 @@ const aws = require( 'aws-sdk' ),
 
 let s3;
 
-// Whether or not the function is being executed within an AWS Lambda environment.
-// @see http://docs.aws.amazon.com/lambda/latest/dg/current-supported-versions.html
-const isLambda = process.env.AWS_EXECUTION_ENV ? true : false; // eslint-disable-line no-process-env
-
 exports.handler = ( event, context, callback ) => {
 
-  const config = getConfig(),
-        getResult = [],
-        sendResult = [];
+  const filePaths = getEnv( 'STP_SFTP_PATH' ),
+        fileSyncs = [];
 
-  // Get the two copies of the log files.
-  getResult.push( getLogFileStore( config.s3 ) );
-  getResult.push( getLogFileLatest( config.sftp ) );
+  filePaths.split( ',' ).forEach( ( filePath ) => {
+    const config = getConfig( filePath );
+    fileSyncs.push( syncFile( config ) );
+  });
 
-  Promise.all( getResult ).then( ( data ) => {
-
-    // Work out which lines in the log file are new since we last checked.
-    const OLD = 0,
-          NEW = 1,
-          newLogLines = compareLogFiles( data[ OLD ], data[ NEW ]);
-
-    // If there's new log lines, or we didn't have an old log file, store the new log file.
-    if ( newLogLines || ! data[ OLD ]) {
-      sendResult.push( saveToStore( data[ NEW ], config.s3 ) );
-    }
-
-    // If there's new log lines, send them to Papertrail.
-    if ( newLogLines ) {
-      sendResult.push( sendToPapertrail( newLogLines, config.papertrail ) );
-    }
-
-    return Promise.all( sendResult );
-
-  }).then( ( result ) => {
+  Promise.all( fileSyncs ).then( ( result ) => {
     log( 'Done.' );
     callback( null, result );
   }).catch( ( error ) => {
@@ -72,11 +49,52 @@ exports.handler = ( event, context, callback ) => {
 exports.compareLogFiles = compareLogFiles;
 
 /**
- * Retrieves configuration from the environment. Sensitive data should be encrypted with AWS KMS.
+ *
+ */
+function syncFile( config ) {
+
+  const getResult = [],
+        sendResult = [];
+
+  // Get the two copies of the log files.
+  getResult.push( getLogFileStore( config ) );
+  getResult.push( getLogFileLatest( config ) );
+
+  return Promise.all( getResult ).then( ( data ) => {
+
+    // Work out which lines in the log file are new since we last checked.
+    const OLD = 0,
+          NEW = 1,
+          newLogLines = compareLogFiles( data[ OLD ], data[ NEW ], config );
+
+    // If there's new log lines, or we didn't have an old log file, store the new log file.
+    if ( newLogLines || ! data[ OLD ]) {
+      sendResult.push( saveToStore( data[ NEW ], config ) );
+    }
+
+    // If there's new log lines, send them to Papertrail.
+    if ( newLogLines ) {
+      sendResult.push( sendToPapertrail( newLogLines, config ) );
+    }
+
+    if ( ! sendResult.length ) {
+      log( config.sftp.path, 'Nothing to do.' );
+      sendResult.push( ( new Promise( ( resolve ) => {
+        resolve( 'Nothing to do.' );
+      }) ) );
+    }
+
+    return Promise.all( sendResult );
+
+  }); // Return Promise.all.
+} // Function syncFile.
+
+/**
+ * Retrieves configuration from the environment.
  *
  * @returns {Object} A configuration object containing sftp, s3 and papertrail objects.
  */
-function getConfig() {
+function getConfig( filePath ) {
   return {
 
     sftp: {
@@ -85,7 +103,7 @@ function getConfig() {
       port:     getEnv( 'STP_SFTP_PORT', DEFAULT_SFTP_PORT ),
       username: getEnv( 'STP_SFTP_USERNAME' ),
       password: getEnv( 'STP_SFTP_PASSWORD' ),
-      path:     getEnv( 'STP_SFTP_PATH' ),
+      path:     filePath,
       debug:    DEBUG ? log : null,
 
       // Explicitly provide diffie-hellman algorithms to resolve handshake issues.
@@ -101,8 +119,8 @@ function getConfig() {
 
     s3: {
       bucket: getEnv( 'STP_S3_BUCKET' ),
-      region: getEnv( 'STP_S3_REGION', DEFAULT_AWS_REGION ),
-      path:   getEnv( 'STP_SFTP_HOST' ) + '/' + getEnv( 'STP_SFTP_PATH' )
+      region: getEnv( 'STP_S3_REGION', AWS_DEFAULT_REGION ),
+      path:   getEnv( 'STP_SFTP_HOST' ) + '/' + filePath
     },
 
     // @see https://github.com/kenperkins/winston-papertrail#usage
@@ -110,7 +128,7 @@ function getConfig() {
       host:     getEnv( 'STP_PAPERTRAIL_HOST' ),
       port:     getEnv( 'STP_PAPERTRAIL_PORT' ),
       hostname: getEnv( 'STP_SFTP_HOST' ),
-      program:  path.parse( getEnv( 'STP_SFTP_PATH' ) ).name,
+      program:  path.parse( filePath ).name,
       colorize: true
     }
 
@@ -141,30 +159,29 @@ function getLogFileLatest( config ) {
   return new Promise( ( resolve, reject ) => {
 
     const client = new sftp();
-    log( 'Connecting to SFTP server...' );
+    log( config.sftp.path, 'Connecting to SFTP server...' );
 
-    decrypt( config.password ).then( ( password ) => {
-      config.password = password;
-      return client.connect( config );
-    }).then( () => {
-      log( 'Retrieving latest log file...' );
-      return client.get( config.path );
+    client.connect( config.sftp ).then( () => {
+      log( config.sftp.path, 'Retrieving latest log file...' );
+      return client.get( config.sftp.path );
     }).then( ( stream ) => {
 
       const chunks = [];
 
       stream.on( 'data', ( chunk ) => {
+        const logMsg = chunks.length + ' ' + maybePlural( chunks.length, 'part', 'parts' ) + '...';
         chunks.push( chunk );
-        log( chunks.length + ' ' + maybePlural( chunks.length, 'part', 'parts' ) + '...' );
+        log( config.sftp.path, logMsg );
       }).on( 'end', () => {
 
         const contents = chunks.join( '' ).trim(),
-              lines = contents.split( '\n' ).length;
+              lines = contents.split( '\n' ).length,
+              logMsg = 'Retrieved ' + lines + ' lines in approx ' + contents.length + ' bytes.';
 
         // Disconnect from the SFTP server.
         client.end();
 
-        log( 'Retrieved ' + lines + ' lines in approx ' + contents.length + ' bytes.' );
+        log( config.sftp.path, logMsg );
         resolve( contents );
 
       });
@@ -185,13 +202,13 @@ function getLogFileLatest( config ) {
 function getLogFileStore( config ) {
   return new Promise( ( resolve ) => {
 
-    if ( ! s3 ) connectToS3( config.region );
-    log( 'Retrieving old log file for comparison...' );
+    if ( ! s3 ) connectToS3( config.s3.region );
+    log( config.sftp.path, 'Retrieving old log file for comparison...' );
 
     // @see http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#getObject-property
     s3.getObject({
-      Bucket: config.bucket,
-      Key:    config.path
+      Bucket: config.s3.bucket,
+      Key:    config.s3.path
     }, ( error, data ) => {
 
       if ( error ) {
@@ -229,14 +246,15 @@ function getLogFileStore( config ) {
  *                   that didn't exist in the old. If an old log file is not available, a blank
  *                   string will be returned to avoid returning everything when logging a new file.
  */
-function compareLogFiles( oldContents, newContents ) {
+function compareLogFiles( oldContents, newContents, config = { sftp: { path: '' } }) {
 
   if ( ! oldContents ) {
-    log( 'As we have no old log file to compare with, no log lines will be selected.' );
+    const logMsg = 'As we have no old log file to compare with, no log lines will be selected.';
+    log( config.sftp.path, logMsg );
     return '';
   }
 
-  log( 'Looking for new log entries...' );
+  log( config.sftp.path, 'Looking for new log entries...' );
 
   // Split the log file lines into arrays, filtering out any blank lines.
   const oldLines = oldContents.split( '\n' ).filter( () => true ),
@@ -247,7 +265,7 @@ function compareLogFiles( oldContents, newContents ) {
   // eslint-disable-next-line no-magic-numbers
   const difference = newLines.filter( line => 0 > oldLines.indexOf( line ) );
 
-  log( 'Found ' + difference.length + ' new lines.' );
+  log( config.sftp.path, 'Found ' + difference.length + ' new lines.' );
 
   // Return the new lines as a string, with any outside whitespace removed.
   return difference.join( '\n' ).trim();
@@ -264,18 +282,18 @@ function compareLogFiles( oldContents, newContents ) {
 function saveToStore( contents, config ) {
   return new Promise( ( resolve, reject ) => {
 
-    if ( ! s3 ) connectToS3( config.region );
-    log( 'Storing log file for later comparison...' );
+    if ( ! s3 ) connectToS3( config.s3.region );
+    log( config.sftp.path, 'Storing log file for later comparison...' );
 
     // @see http://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/S3.html#putObject-property
     s3.putObject({
       Body:        contents,
-      Bucket:      config.bucket,
-      Key:         config.path,
+      Bucket:      config.s3.bucket,
+      Key:         config.s3.path,
       ContentType: 'text/plain'
     }, ( error ) => {
       if ( error ) reject( error );
-      else resolve();
+      else resolve( 'Log file saved.' );
     });
 
   }); // Return Promise.
@@ -291,13 +309,13 @@ function saveToStore( contents, config ) {
 function sendToPapertrail( logLines, config ) {
   return new Promise( ( resolve, reject ) => {
 
-    log( 'Connecting to Papertrail...' );
+    log( config.sftp.path, 'Connecting to Papertrail...' );
 
     // @see https://github.com/kenperkins/winston-papertrail#usage
     // eslint-disable-next-line no-unused-expressions
     require( 'winston-papertrail' ).Papertrail;
 
-    const papertrail = new winston.transports.Papertrail( config ),
+    const papertrail = new winston.transports.Papertrail( config.papertrail ),
           logger = new winston.Logger({ transports: [ papertrail ] });
 
     papertrail.on( 'error', ( error ) => {
@@ -305,49 +323,20 @@ function sendToPapertrail( logLines, config ) {
     }).on( 'connect', () => {
 
       const lines = logLines.split( '\n' );
-      const logId = config.hostname + ' / ' + config.program;
-      log( 'Logging ' + lines.length + ' lines (' + logId + ')...' );
+      const logId = config.papertrail.hostname + ' / ' + config.papertrail.program;
+      log( config.sftp.path, 'Logging ' + lines.length + ' lines (' + logId + ')...' );
 
       lines.forEach( ( line ) => {
         logger.info( line );
-        if ( DEBUG ) log( line );
+        if ( DEBUG ) log( config.sftp.path, line );
       });
 
       logger.close();
-      resolve();
+      resolve( 'Logged ' + lines.length + ' lines.' );
 
     }); // On connect.
   }); // Return Promise.
 } // Function sendToPapertrail.
-
-/**
- * Decrypts an encrypted string with AWS KMS.
- *
- * Returns the string as-is if the execution environment is not AWS Lambda, for example if you are
- * running this function locally, you'll probably have your env vars available in plain text.
- *
- * @param {string} encrypted The encrypted string.
- * @returns {Promise} A Promise to provide the decrypted string.
- */
-function decrypt( encrypted ) {
-  return new Promise( ( resolve, reject ) => {
-
-    if ( ! isLambda ) {
-      resolve( encrypted );
-      return;
-    }
-
-    log( 'Decrypting SFTP password...' );
-
-    const kms = new aws.KMS();
-
-    kms.decrypt({ CiphertextBlob: Buffer.from( encrypted, 'base64' ) }, ( error, data ) => {
-      if ( error ) reject( error );
-      else resolve( data.Plaintext.toString( 'ascii' ) );
-    });
-
-  }); // Return Promise.
-} // Function decrypt.
 
 /**
  * Maybe pluralises a string depending on the given number.

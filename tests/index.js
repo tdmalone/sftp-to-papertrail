@@ -6,6 +6,8 @@
  * @author Tim Malone <tdmalone@gmail.com>
  */
 
+/* global expect */
+
 'use strict';
 
 // @see https://github.com/abritinthebay/jest-tobetype

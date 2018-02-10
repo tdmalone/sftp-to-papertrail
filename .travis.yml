@@ -1,4 +1,5 @@
 language: node_js
+services: docker
 node_js: 6.10
 
 env:
@@ -8,6 +9,19 @@ env:
     - AWS_DEFAULT_REGION=ap-southeast-2
     - LAMBDA_NAME=sftpToPapertrail
     - LAMBDA_ALIAS=prod
+
+    - STP_SFTP_HOST=appserver.dev.aea704e1-f89f-4a49-a160-c0d9a71c4671.drush.in
+    - STP_SFTP_PORT=2222
+    - STP_SFTP_USERNAME=dev.aea704e1-f89f-4a49-a160-c0d9a71c4671
+    - STP_SFTP_PATH=logs/nginx-access.log,logs/nginx-error.log,logs/php-fpm-error.log,logs/php-slow.log
+    - STP_S3_BUCKET=aws-admin-timmalone
+    - STP_PAPERTRAIL_HOST=logs5.papertrailapp.com
+
+    # STP_SFTP_PASSWORD
+    - secure: RK11+6XQmexZeCAaIDoJ5/bdMRfptsj2Pqgfd9qIs6EIai+N133OnGPpOqnIDbwd9MV3U/yfjfp4N+HqIgl6BHV9gr8Lg9DK16+6nY7j9dxeV6izDSE8JvA2EahBKtU+Ir06J/0pGwMd06XLh8GFRA+dMUOJ02nD4fS01MUxNlPThuF31u2nPcoZfcpxpGpWDcuH/KprlzL1oUMjDmuu2H4Fz1Oi+gffECVg01tO6gDu1y3swXFf3qDEB1SJKN74QKmli1byZsdKox3no3f02ZDhZp4gABBOROVYz5Tzy0tBq++6Qbj84ZUD00xu+Fv1lXAozKFJILDI/KOdfCg8zCm0K6IQPCensz/GWiU4N6NESmedcFc4c2Fpm/LfNkcCSW2y7BQ0f7x7KK+wpe1PzCl0lN9p4Wc3vkrvOJYLZ99GdACDaJcpbS8EaTIF7p8kUiP3cnJBY+5n9N4j4r3+zdl3fDgS0Tm8sM1OIjQRKWECo6/++EA9XSt49xUXfj4VWB+eEJqWdDafVtSlFFub5j+he+HC5kCbLG5MvO8EzDgK76uDVjFH+SIydxFCymW6Js4jAy8J9kYQ8hVHSyv1EAXhiadIWcwcMANUOnNj3DA6zP0sKF3U1E4AJYj4RsjXNgGUxCaVERIGEYCDjGy3EHjEdnb/NpsfLZ0mqpyNpUE=
+
+    # STP_PAPERTRAIL_PORT
+    - secure: q2/lFQ6cAJQNmJGACMJgmN5SbgcpMPd7jAIt6I6c09LSSc4aiSOlFdSJsGL8CfbdBf1Tv2YwuBFPTzYxEhOkeeOKQAbX4daqFtuwKHsZg12w4AnrItkyx6OXUJnruX8pjpbxQl0IX92szget4GTG/fpmVWeWZ1z7wT6WwL1aVF8jOKtPrPytzMjh7lSgkha0PmfDDB4eLq0vIosftn4ashBfmai69nhtj6OJyzAtx9DdJIzx1DI4BoPdi+Sjs+rJiysjdTvbQvK9aGa7QloKMvkW6qiK0W6hZl7WYF7qmat4qOvzFCChffJ/OJbHMloDb3qZru3BTn+HOTXSHz/NevGs6/EWOYtDEewYjrwdW12O+jqJhR6VG0L4+prDvTxogYXJsDOpk9BUj1CKK7fBaVKd7EhDcAMF12g+08REwb7j98yBtPwfQrE92ZnQqkPLwxfJZQoegop76lqOLN5SDbljLsjgNBlQKaluXp+3bCaTLJ9j80bNoUd7jX1vyLr2RXSdXB9ds7baXJtiIOOjnCGtNOnoJB5cHO62nsEkNWs3cQrlckStENI6xDoWz6sGDPpe90unZ3j+UMTP9nUkXnmI87PsOzF5dCkRwMu5Ea0I4fCwnyeuZZ7AJ+hDjDuhQPE7l3OpDwRujKNdpHd9cHgcgPlPmrztaCAUlTqvpEw=
 
     # AWS_SECRET_ACCESS_KEY
     - secure: ViadDnPh5cylNXx/W+jiSTCOflzfx5vYprZhjjB8Oxibud6b78VpaijBkuW5vSg55Daqm0Br0unmx+3Bu/Yf+NUwtO2m6QJSp+lioJ9ect2lUdBkif/T/OyKFvBe24yNiqVuITZvKZUABVo187N78HYVe34cU4e0w+WSJuMfAy1hx7l9eBdMOqlOWdu+9qYqitimvN0RmluSWf9iCI8a8cDxaE6h+bAZqIwVewwIuek2LrkJbTffKSCikbD8QaSNhUdm/Vpo9mumhegHSFnJYB4pWHOtVoq+aTx3w19hqO0/V+QaZstnBFEtWQDg5qj1GM6jc9jbl/YmEOK46Ng3oUU9SZOJZAkbGzchYSQrfb8mNr676qmH+63yrk1VlpA725YImdgBIAY3WKtlQcwsrrvUwK7hHH+698ZCkFl7xMtGjSPVCxuTh+Y+t8q++ZFF/cFvWfgVfl+gA/Z0iBpOoR+wdHpYdOqIhW1f0yBjQORleg5XOz7Qv5fNRLBm/2J4mZdirVlbVOFfbG7A0Z+2bUge15qdH7aFmRYxmpMqfQaNE6FXuXIJKc7UNRMMBnsWpGxVtEI0oUvwb5ZE271COfKGbyehT0lglkdTDwgk0w5b8OaIkTnvajKSR1mpo+bpZOwOkEVeMpWBNr91wRA6FdjnpOwFID4l4n7N1xFemWA=
@@ -23,12 +37,18 @@ script:
   - yarn lint
   - yarn test
 
-before_deploy: rm -rf tests .*rc.js
+before_deploy: rm -rf node_modules && yarn --prod && rm -rf tests .*rc.js
+before_deploy: yarn remove aws-sdk && rm -rf coverage node_modules tests .*rc.js && yarn --prod
 
 deploy:
 
-  - provider: lambda
-    publish: true
+  # Deploy to $LATEST on dev branch. (i.e. don't publish a new version).
+
+  - on:
+      branch: dev
+    publish: false
+
+    provider: lambda
     function_name: $LAMBDA_NAME
     region: $AWS_DEFAULT_REGION
     role: arn:aws:iam::873114526714:role/genericLambdaRole
@@ -37,30 +57,52 @@ deploy:
     timeout: 120
     handler_name: handler
     access_key_id: $AWS_ACCESS_KEY_ID
-    secret_access_key:
-      secure: UikyNIAcjzs1aDNM+dKag915vmCei0V2jWq8UyFyrc9dmLAE2MuT4wd4ztn073PXKhs84v74aYyndhB9RNVYwKYc8NGoAbLwHM2cXkvMy65/uCfF+/v2mXFzqHPIiIJTI4xJ88a5NoZCbkRwDXPv0HLn/cnjsGBL1AM7OmK7YsOLkDCCyqmhBilWhIGbPqiiJhGWBL6oSg6kdW2TTFyP+dJX52ZVPb68MlBhRX/XqnB2BzBHQKK+OOWO+reziv9sK+l4OjS93iRT+acJc28h4Sc4UMK+YVJPVmiuqYrxCb30lqoJUqLbnGDlCibbdacYypi2p1sEGDJ9dQMOqaOx/oQL9KfvmxCybTjzzVi5W5eXTbKfdPL40ZHVW8/k9x6EVCviV5u6nMfnbL5TOXi9ybunPYQqN0tsfStvUQ2hDrwaDLu6UFBlBtqtSNXmhxqQEFeMgIbxyq+XE2yp0oLaGmLuALc9tRdchq68Lvy6RtpNIA5+V6KJKrcEhokpR5bV1nEug49bflg1rOnDcqcRnsKe3izoloM6mBpmZP22axUd+o1Yh1fK6hLZjEFbswMAiJF+4kbVKyrDTjtSzf3l4vzsz/Fe+mUBZ7Hn44laDkc4W87l0kwgTd4PqBfNTM6wGR0b2/i6j9jnnaEH0QXPmXnCdWsS8tVKrUJMzQhTL2g=
+    secret_access_key: $AWS_SECRET_ACCESS_KEY
     skip_cleanup: true
-    on:
-      branch: master
 
-  - provider: npm
+  # Deploy and publish a new version on master branch.
+
+  - on:
+      branch: master
+    publish: true
+
+    provider: lambda
+    function_name: $LAMBDA_NAME
+    region: $AWS_DEFAULT_REGION
+    role: arn:aws:iam::873114526714:role/genericLambdaRole
+    description: Retrieves log files via SFTP, and logs new entries to Papertrail.
+    runtime: nodejs6.10
+    timeout: 120
+    handler_name: handler
+    access_key_id: $AWS_ACCESS_KEY_ID
+    secret_access_key: $AWS_SECRET_ACCESS_KEY
+    skip_cleanup: true
+
+  # Deploy to npm on master with a new tag.
+
+  - on:
+      branch: master
+      tags: true
+
+    provider: npm
     email: tdmalone@gmail.com
     api_key:
       secure: fdg6DUS+Zg3mi3saDcbp4Ns++9B0sgJpSuEDfq/j1InwRYNhJSQmrpzHj1ci2ngmfkEpuKkHTLGC6rRFIO++Q0A0sUblbbEIpBbSgkH2ASzeSTM83d31CK/mq3/hrGSfFa0jo3boZdMf2bQpoaZuWnpe1ZfMjJaWr57BY2VNAFucKyfdgKsb93ZS8AoVREYcePDtPgZ/Ed6A9r/ByCP6TTZhkxltZU4XSpkPMJ0HRG+HNlTzc+DN79Q7PUNMnc4d39p7H4nFzdBuUjyKbpF3G6ppb3w707RKwIUelbo8Q1bEn13al0HWRsramqyQfe6lp25Ej88hSZrHreKT0rVpip7cAJB4adojr4L3h5pRyYixtSvXLIgfy/T+RkQ1eeLrfzjHvviGqF9ajQL34YNyC7BGuBny0RlmjCsH+Z96idgBFi6P6r2ZHpvWkK3UAZzM6veA9K6FetNmOn70nIZBUJWMCxOWPGb221EbqRHlp+CGvC/Xj+1rlrt0aNRZNh6wMCLIS0NZi3Jxy18P0poLjf9ZNcaIB90MH9cNjhdK4FE8JiY0NIoocYQ1vtzcLlq0oj/hi8npcnVupMj6nj+/7t8sw4o9JK6RkK0UOJaPtxQxxSTDUyg8n7VqdW6OblwMfDFKFUnj5C/PIf6lDVmX2QFLw0cM6VeFxuVNz92b0DI=
     skip_cleanup: true
-    on:
-      branch: master
-      tags: true
 
 after_deploy:
 
   # Set a Lambda alias to the most recently deployed version.
-  - pip install awscli --upgrade --user
-  - export MOST_RECENT=$(aws lambda list-versions-by-function --function "${LAMBDA_NAME}" --max-items 10000 | node -e "let stdin=''; process.stdin.on('data',(chunk)=>{stdin+=chunk}).on('end',()=>{console.log(JSON.parse(stdin).Versions.pop().Version)})")
-  - aws lambda update-alias --function-name "${LAMBDA_NAME}" --name "${LAMBDA_ALIAS}" --function-version "${MOST_RECENT}"
+  - if [ "master" = "${TRAVIS_BRANCH}" ]; then
+      pip install awscli --upgrade --user;
+      export MOST_RECENT=$(aws lambda list-versions-by-function --function "${LAMBDA_NAME}" --max-items 10000 | node -e "let stdin=''; process.stdin.on('data',(chunk)=>{stdin+=chunk}).on('end',()=>{console.log(JSON.parse(stdin).Versions.pop().Version)})");
+      aws lambda update-alias --function-name "${LAMBDA_NAME}" --name "${LAMBDA_ALIAS}" --function-version "${MOST_RECENT}";
+    fi;
 
 notifications:
   email: false
+  webhooks:
+    urls: https://api.tm.id.au/v2/travis/jobStatus
   slack:
     on_start: always
     rooms:

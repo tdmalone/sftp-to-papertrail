@@ -1,10 +1,10 @@
-# sftp-to-papertrail
+# SFTP to Papertrail
 
-A Node module that retrieves log files via SFTP, and logs new entries to Papertrail. Deploys to AWS Lambda and uses S3 for maintaining state.
+An [AWS Lambda](https://aws.amazon.com/lambda/) function that retrieves log files via SFTP, checks for new entries, and sends them to [Papertrail](https://papertrailapp.com/). Uses [S3](https://aws.amazon.com/s3/) for maintaining state.
 
 ## Installation
 
-Several manual steps are needed for initial setup. If you want to be able to automatically re-deploy updates later (such as updates you make, or updates you pull down from me), there's also an option to set that up with Travis CI.
+Several manual steps are needed for initial setup. If you want to be able to automatically re-deploy updates later (such as updates you make, or updates you pull down from me), there's also an option to set that up with [Travis CI](https://travis-ci.org/).
 
 Full instructions are coming soon. The steps will look something like this:
 
@@ -51,7 +51,15 @@ It's always a good idea to re-test through the Lambda console after updating, ju
 
 Issues and pull requests welcomed. This is my first Lambda function, created to solve a problem I encountered at work; I'd love any improvements.
 
-The easiest way to contribute is to fork and clone the repo locally, install dependencies (`yarn` or `npm install`), and then run `yarn execute` (or `npm run execute`) to run the function locally. You'll be prompted to export some environment variables so the function can do it's thing. You will need access to an SFTP server, an S3 bucket and a Papertrail account to run through everything.
+The easiest way to contribute is to fork and clone the repo locally, install dependencies (`yarn`), and then run `yarn docker-tests` to execute the function locally. You'll be prompted to export some environment variables so the function can do it's thing. You will need access to an SFTP server, an S3 bucket and a Papertrail account to run through everything.
+
+## TODO
+
+- Potentially add support for globbing or listing & downloading entire directories
+- Potentially add support for multiple SFTP accounts at once
+- Work out the difference between various S3 errors and if it's a connection failure
+- Add additional tests with mocked SFTP, Winston and AWS modules
+- Link up Docker tests to run through Travis
 
 ## License
 
