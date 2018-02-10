@@ -1,6 +1,6 @@
 # SFTP to Papertrail
 
-A Node module that retrieves log files via SFTP, and logs new entries to [Papertrail](https://papertrailapp.com/). Deploys to [AWS Lambda](https://aws.amazon.com/lambda/) and uses [S3](https://aws.amazon.com/s3/) for maintaining state.
+An [AWS Lambda](https://aws.amazon.com/lambda/) function that retrieves log files via SFTP, checks for new entries, and sends them to [Papertrail](https://papertrailapp.com/). Uses [S3](https://aws.amazon.com/s3/) for maintaining state.
 
 ## Installation
 
@@ -51,13 +51,14 @@ It's always a good idea to re-test through the Lambda console after updating, ju
 
 Issues and pull requests welcomed. This is my first Lambda function, created to solve a problem I encountered at work; I'd love any improvements.
 
-The easiest way to contribute is to fork and clone the repo locally, install dependencies (`yarn` or `npm install`), and then run `yarn execute` (or `npm run execute`) to run the function locally. You'll be prompted to export some environment variables so the function can do it's thing. You will need access to an SFTP server, an S3 bucket and a Papertrail account to run through everything.
+The easiest way to contribute is to fork and clone the repo locally, install dependencies (`yarn`), and then run `yarn docker-tests` to execute the function locally. You'll be prompted to export some environment variables so the function can do it's thing. You will need access to an SFTP server, an S3 bucket and a Papertrail account to run through everything.
 
 ## TODO
 
 - Add support for dealing with multiple log files at once
 - Work out the difference between various S3 errors and if it's a connection failure
 - Add additional tests with mocked SFTP, Winston and AWS modules
+- Link up Docker tests to run through Travis
 
 ## License
 

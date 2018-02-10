@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "cross-env": "^5.1.0",
+    "documentation": "^5.3.5",
     "eslint": "^4.8.0",
     "eslint-config-tdmalone": "^0.0.1",
     "jest": "^21.2.1",
