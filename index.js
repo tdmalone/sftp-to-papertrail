@@ -246,7 +246,7 @@ function getLogFileStore( config ) {
  *                   that didn't exist in the old. If an old log file is not available, a blank
  *                   string will be returned to avoid returning everything when logging a new file.
  */
-function compareLogFiles( oldContents, newContents, config = { sftp: { path: '' } } ) {
+function compareLogFiles( oldContents, newContents, config = { sftp: { path: '' } }) {
 
   if ( ! oldContents ) {
     const logMsg = 'As we have no old log file to compare with, no log lines will be selected.';
