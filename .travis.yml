@@ -1,4 +1,5 @@
 language: node_js
+services: docker
 node_js: 6.10
 
 env:
@@ -9,6 +10,19 @@ env:
     - LAMBDA_NAME=sftpToPapertrail
     - LAMBDA_ALIAS=prod
 
+    - STP_SFTP_HOST=appserver.dev.aea704e1-f89f-4a49-a160-c0d9a71c4671.drush.in
+    - STP_SFTP_PORT=2222
+    - STP_SFTP_USERNAME=dev.aea704e1-f89f-4a49-a160-c0d9a71c4671
+    - STP_SFTP_PATH=logs/nginx-access.log
+    - STP_S3_BUCKET=aws-admin-timmalone
+    - STP_PAPERTRAIL_HOST=logs5.papertrailapp.com
+
+    # STP_SFTP_PASSWORD
+    - secure: KKH4UvKlZ87bUM/CrXNI3B9nAZRRl/GMcC5tRU7K3oeWJUtBfkuaLGNsRTi6MIM97pKhH2VJTjS5TlQBLE0Kii99mZj+mP659BugOREtnu+YedkZDvbTDv4et2CfHF+jj+7/+YuhTIbfVHEOOiVcBmykyk+gb0Dd1T8gLWm0x0PE6/wjd00oQHut7BGcOD1GRZAfcSePejDqgAuePvd5EeQOACSARDnuXdy9OgIQR7R7/N8G/rzSzDWQydkzJqkjLYmlYmglArdfGXEX81NzE7/qKQeHJ4bBuwdy+msS62sT2onDknK47nl38F4VWFTt9hCYkC5CnvHzLqSBAgPdwj8I742BfM1cSdDtQTQTaJ3afp6/AwBh0JA+sQ50McYThdHF+z5u/jcYHfHIrtoB5qErfejrxtdRr2UMkBM/fu6mLiBKBK2kvSZXtxmyjL/4nihQs4eb72xqITs2ZnfHhoeKLYxCYT9E9giQiRbaanNm3tSs0Cyw/9CKlBUs0qzAO1NNpaYd9XSmFb7da+MNt5fKbbHkNQKaLo2bZW/Om72BiX7qOKg+ut5Df0TVTHnf3lR3R8pj5Nl6+9jHmB5kVt2MxOd7HvrQP87D62FjmbzwXM37JsrNeMFA8U/M/ZT6DfCMN5zta5ImwIno3sj1vNYWCOU5bPs1ua/s1glbgxA=
+
+    # STP_PAPERTRAIL_PORT
+    - secure: q2/lFQ6cAJQNmJGACMJgmN5SbgcpMPd7jAIt6I6c09LSSc4aiSOlFdSJsGL8CfbdBf1Tv2YwuBFPTzYxEhOkeeOKQAbX4daqFtuwKHsZg12w4AnrItkyx6OXUJnruX8pjpbxQl0IX92szget4GTG/fpmVWeWZ1z7wT6WwL1aVF8jOKtPrPytzMjh7lSgkha0PmfDDB4eLq0vIosftn4ashBfmai69nhtj6OJyzAtx9DdJIzx1DI4BoPdi+Sjs+rJiysjdTvbQvK9aGa7QloKMvkW6qiK0W6hZl7WYF7qmat4qOvzFCChffJ/OJbHMloDb3qZru3BTn+HOTXSHz/NevGs6/EWOYtDEewYjrwdW12O+jqJhR6VG0L4+prDvTxogYXJsDOpk9BUj1CKK7fBaVKd7EhDcAMF12g+08REwb7j98yBtPwfQrE92ZnQqkPLwxfJZQoegop76lqOLN5SDbljLsjgNBlQKaluXp+3bCaTLJ9j80bNoUd7jX1vyLr2RXSdXB9ds7baXJtiIOOjnCGtNOnoJB5cHO62nsEkNWs3cQrlckStENI6xDoWz6sGDPpe90unZ3j+UMTP9nUkXnmI87PsOzF5dCkRwMu5Ea0I4fCwnyeuZZ7AJ+hDjDuhQPE7l3OpDwRujKNdpHd9cHgcgPlPmrztaCAUlTqvpEw=
+
     # AWS_SECRET_ACCESS_KEY
     - secure: ViadDnPh5cylNXx/W+jiSTCOflzfx5vYprZhjjB8Oxibud6b78VpaijBkuW5vSg55Daqm0Br0unmx+3Bu/Yf+NUwtO2m6QJSp+lioJ9ect2lUdBkif/T/OyKFvBe24yNiqVuITZvKZUABVo187N78HYVe34cU4e0w+WSJuMfAy1hx7l9eBdMOqlOWdu+9qYqitimvN0RmluSWf9iCI8a8cDxaE6h+bAZqIwVewwIuek2LrkJbTffKSCikbD8QaSNhUdm/Vpo9mumhegHSFnJYB4pWHOtVoq+aTx3w19hqO0/V+QaZstnBFEtWQDg5qj1GM6jc9jbl/YmEOK46Ng3oUU9SZOJZAkbGzchYSQrfb8mNr676qmH+63yrk1VlpA725YImdgBIAY3WKtlQcwsrrvUwK7hHH+698ZCkFl7xMtGjSPVCxuTh+Y+t8q++ZFF/cFvWfgVfl+gA/Z0iBpOoR+wdHpYdOqIhW1f0yBjQORleg5XOz7Qv5fNRLBm/2J4mZdirVlbVOFfbG7A0Z+2bUge15qdH7aFmRYxmpMqfQaNE6FXuXIJKc7UNRMMBnsWpGxVtEI0oUvwb5ZE271COfKGbyehT0lglkdTDwgk0w5b8OaIkTnvajKSR1mpo+bpZOwOkEVeMpWBNr91wRA6FdjnpOwFID4l4n7N1xFemWA=
 
@@ -18,7 +32,11 @@ cache:
     - node_modules
 
 install: yarn
-script: yarn lint && yarn test
+
+script:
+  - yarn lint
+  - yarn test
+
 before_deploy: rm -rf node_modules && yarn --prod && rm -rf tests .*rc.js
 
 deploy:

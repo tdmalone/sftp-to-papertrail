@@ -8,12 +8,13 @@
   "author": "Tim Malone <tdmalone@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "execute": "docker run --rm -v $PWD:/var/task lambci/lambda:nodejs6.10 index.handler {}",
     "lint": "cross-env DEBUG=eslint:cli-engine eslint --color --ignore-pattern '/coverage/' --ignore-pattern '/docs/' --ignore-pattern '!.eslintrc.js' \"**/*.js\"",
     "lint:docs": "documentation lint *.js",
     "fix": "yarn lint --fix",
     "docs": "documentation build *.js --output docs --format html --sort-order alpha",
-    "test": "jest --verbose --coverage"
+    "test": "yarn unit-tests && yarn docker-tests",
+    "unit-tests": "jest --verbose --coverage",
+    "docker-tests": "docker run -e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION -e STP_SFTP_HOST -e STP_SFTP_PORT -e STP_SFTP_USERNAME -e STP_SFTP_PASSWORD -e STP_SFTP_PATH -e STP_S3_BUCKET -e STP_S3_REGION -e STP_SFTP_HOST -e STP_PAPERTRAIL_HOST -e STP_PAPERTRAIL_PORT --rm -v $PWD:/var/task lambci/lambda:nodejs6.10 index.handler {}"
   },
   "keywords": [
     "aws",
