@@ -11,8 +11,11 @@
 
 const DEBUG = false, // When true, SFTP commands and log file lines will be verbosely output.
       SILENT = false, // When true, there will be no console output except for errors.
-      DEFAULT_SFTP_PORT = 22,
-      DEFAULT_AWS_REGION = 'us-east-1';
+      DEFAULT_SFTP_PORT = 22;
+
+/* eslint-disable no-process-env */
+const AWS_DEFAULT_REGION = process.env.AWS_DEFAULT_REGION || 'us-east-1';
+/* eslint-enable no-process-env */
 
 // @see https://github.com/aws/aws-sdk-js
 // @see https://github.com/jyu213/ssh2-sftp-client
@@ -100,7 +103,7 @@ function getConfig() {
 
     s3: {
       bucket: getEnv( 'STP_S3_BUCKET' ),
-      region: getEnv( 'STP_S3_REGION', DEFAULT_AWS_REGION ),
+      region: getEnv( 'STP_S3_REGION', AWS_DEFAULT_REGION ),
       path:   getEnv( 'STP_SFTP_HOST' ) + '/' + getEnv( 'STP_SFTP_PATH' )
     },
 
